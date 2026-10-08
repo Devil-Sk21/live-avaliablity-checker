@@ -44,6 +44,34 @@ BROWSER_HEADERS = {
 }
 
 
+NTFY_TOPIC = "acer_predator_rajkot_360005"
+NTFY_URL = f"https://ntfy.sh/{NTFY_TOPIC}"
+
+
+def send_ntfy_alert(platform: str, buy_url: str, details: str = ""):
+    """
+    Sends an instant high-priority push notification to your phone via ntfy.sh.
+    Zero configuration required.
+    """
+    try:
+        data = f"Laptop in stock on {platform}!\nStatus: {details}\nDelivery: Serviceable to {DEFAULT_PINCODE}".encode("utf-8")
+        req = urllib.request.Request(
+            NTFY_URL,
+            data=data,
+            headers={
+                "Title": f"STOCK ALERT: {platform.upper()}!",
+                "Priority": "urgent",
+                "Tags": "fire,laptop,moneybag",
+                "Click": buy_url,
+            },
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            if resp.status == 200:
+                print(f"[SUCCESS] Instant Phone Push Alert dispatched to {NTFY_URL}!")
+    except Exception as e:
+        print(f"[ERROR] Failed to send ntfy phone push: {e}")
+
+
 def send_telegram_alert(bot_token: str, chat_id: str, platform: str, buy_url: str, details: str = ""):
     """
     Sends an instant push notification message to your Telegram app.
@@ -241,8 +269,14 @@ def scan_once(
 
         if is_in_stock:
             any_stock = True
+            # 1. Instant Phone Push Notification (Zero setup)
+            send_ntfy_alert(name, url, msg)
+            
+            # 2. Telegram Alert (if configured)
             if bot_token and chat_id:
                 send_telegram_alert(bot_token, chat_id, name, url, msg)
+                
+            # 3. Email Alert (if configured)
             if gmail_user and gmail_pass and recipient_email:
                 send_email_alert(gmail_user, gmail_pass, recipient_email, name, url, msg)
 
@@ -264,12 +298,13 @@ def main():
     args = parser.parse_args()
 
     if args.test_notify:
-        print("[TEST] Sending test notification to phone...")
+        print("[TEST] Sending test notifications to phone...")
+        send_ntfy_alert("TEST PLATFORM", RELIANCE_URL, "Test Notification - System is working perfectly!")
         if args.telegram_token and args.telegram_chat_id:
             send_telegram_alert(args.telegram_token, args.telegram_chat_id, "TEST PLATFORM", RELIANCE_URL, "Test Notification")
         if args.gmail_user and args.gmail_pass and args.recipient_email:
             send_email_alert(args.gmail_user, args.gmail_pass, args.recipient_email, "TEST PLATFORM", RELIANCE_URL, "Test Notification")
-        print("[TEST] Done.")
+        print("[TEST] Done. Open https://ntfy.sh/acer_predator_rajkot_360005 on your phone to verify!")
         sys.exit(0)
 
     if args.once:

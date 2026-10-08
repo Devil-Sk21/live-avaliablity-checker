@@ -24,6 +24,21 @@ from typing import Optional, Tuple
 
 from reliance_client import RelianceClient
 
+
+def load_dotenv():
+    env_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    if os.path.exists(env_file):
+        with open(env_file, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    if k.strip() not in os.environ and v.strip():
+                        os.environ[k.strip()] = v.strip()
+
+
+load_dotenv()
+
 # Target Specs
 TARGET_NAME = "Acer Predator Helios Neo 16S AI"
 TARGET_MPN = "NH.QX9SI.001"
